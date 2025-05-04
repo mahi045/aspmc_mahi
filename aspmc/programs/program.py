@@ -479,6 +479,57 @@ class Program(object):
         logger.debug("backdoor res: " + str(len(res)))
         logger.debug(f"backdoor time: {time.time() - start}")
         return res
+    
+    def _acyclic_process(self, comp, backdoor):
+        comp = set(comp)
+        backdoor = set(backdoor)
+        ins = {}
+        aux_rule_vars = {}
+        aux_def_vars = {}
+
+        for a in comp:
+            ins[a] = set()
+            aux_def_vars[a] = dict()
+
+        for a in backdoor:
+            for x in comp:
+                # each atom of backdoor can define other atoms of the component
+                aux_def_vars[a][x] = self._new_var(f'def({a}, {x})')
+
+
+        for idx, r in enumerate(self._program):
+            for a in r.head:
+                if a in comp:
+                    aux_rule_vars[idx] = self._new_var(f'rule({idx})')  # introduce new variables for 
+                    ins[a].add(idx)
+
+                    for x in r.body:
+                        # x is positive body atom and x is in comp
+                        if x > 0 and x in comp:
+                            # atom x can define atom a
+                            if a not in aux_def_vars[x]:
+                                aux_def_vars[x][a] = self._new_var(f'def({x}, {a})')
+
+        toAdd = set()
+        for idx, r in enumerate(self._program):
+            for a in r.head:
+                if a in comp:
+                    toAdd.add(Rule(aux_rule_vars[idx], [x for x in r.body]))  # rule such as: r_i :- body of rule i
+
+                    for x in r.body:
+                        if x > 0 and x in comp:
+                            toAdd.add(Rule(aux_def_vars[x][a], [aux_rule_vars[idx]]))
+
+                            for y in backdoor:
+                                toAdd.add(Rule(aux_def_vars[y][a], [aux_rule_vars[idx], aux_def_vars[y][x]]))
+
+        # finally the constraints
+        for a in backdoor:
+            toAdd.add(Rule([], [aux_def_vars[a][a]]))
+
+        self._program = [r for r in self._program]
+        self._program += list(toAdd)
+        
 
     def _backdoor_process(self, comp, backdoor):
         comp = set(comp)
