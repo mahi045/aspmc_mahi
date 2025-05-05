@@ -522,14 +522,14 @@ class Program(object):
                     # new_r = Rule([a], [aux_rule_vars[idx]])  # rule such as: r_i :- body of rule i
                     # toAdd.append(new_r)
                     # print(new_r)
-                    for x in r.body:
-                        if x > 0 and x in comp:
-                            new_r = Rule([aux_def_vars[x][a]], [aux_rule_vars[idx]])
+                    for b in r.body:
+                        if b > 0 and b in comp:
+                            new_r = Rule([aux_def_vars[b][a]], [aux_rule_vars[idx]])
                             toAdd.append(new_r)
                             # print(new_r)
 
-                            for y in backdoor:
-                                new_r = Rule([aux_def_vars[y][a]], [aux_rule_vars[idx], aux_def_vars[y][x]])
+                            for x in backdoor:
+                                new_r = Rule([aux_def_vars[x][a]], [aux_rule_vars[idx], aux_def_vars[x][b]])
                                 toAdd.append(new_r)
                                 # print(new_r)
 
