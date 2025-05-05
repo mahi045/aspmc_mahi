@@ -483,25 +483,24 @@ class Program(object):
     def _acyclic_process(self, comp, backdoor):
         comp = set(comp)
         backdoor = set(backdoor)
-        ins = {}
         aux_rule_vars = {}
         aux_def_vars = {}
 
         for a in comp:
-            ins[a] = set()
             aux_def_vars[a] = dict()
 
         for a in backdoor:
             for x in comp:
                 # each atom of backdoor can define other atoms of the component
                 aux_def_vars[a][x] = self._new_var(f'def({a}, {x})')
+                self._deriv.add(aux_def_vars[a][x])
 
 
         for idx, r in enumerate(self._program):
             for a in r.head:
-                if a in comp:
+                if a in comp and (comp & set([x for x in r.body if x > 0])):
                     aux_rule_vars[idx] = self._new_var(f'rule({idx})')  # introduce new variables for 
-                    ins[a].add(idx)
+                    self._deriv.add(aux_rule_vars[idx])
 
                     for x in r.body:
                         # x is positive body atom and x is in comp
@@ -509,23 +508,35 @@ class Program(object):
                             # atom x can define atom a
                             if a not in aux_def_vars[x]:
                                 aux_def_vars[x][a] = self._new_var(f'def({x}, {a})')
+                                self._deriv.add(aux_def_vars[x][a])
 
-        toAdd = set()
+        toAdd = []
         for idx, r in enumerate(self._program):
             for a in r.head:
-                if a in comp:
-                    toAdd.add(Rule(aux_rule_vars[idx], [x for x in r.body]))  # rule such as: r_i :- body of rule i
+                if a in comp and (comp & set([x for x in r.body if x > 0])):
+                    # print("=====", r)
+                    new_r = Rule([aux_rule_vars[idx]], [x for x in r.body])  # rule such as: r_i :- body of rule i
+                    toAdd.append(new_r)
+                    # print(new_r)
 
+                    # new_r = Rule([a], [aux_rule_vars[idx]])  # rule such as: r_i :- body of rule i
+                    # toAdd.append(new_r)
+                    # print(new_r)
                     for x in r.body:
                         if x > 0 and x in comp:
-                            toAdd.add(Rule(aux_def_vars[x][a], [aux_rule_vars[idx]]))
+                            new_r = Rule([aux_def_vars[x][a]], [aux_rule_vars[idx]])
+                            toAdd.append(new_r)
+                            # print(new_r)
 
                             for y in backdoor:
-                                toAdd.add(Rule(aux_def_vars[y][a], [aux_rule_vars[idx], aux_def_vars[y][x]]))
+                                new_r = Rule([aux_def_vars[y][a]], [aux_rule_vars[idx], aux_def_vars[y][x]])
+                                toAdd.append(new_r)
+                                # print(new_r)
 
         # finally the constraints
         for a in backdoor:
-            toAdd.add(Rule([], [aux_def_vars[a][a]]))
+            new_r = Rule([], [aux_def_vars[a][a]])
+            toAdd.append(new_r)
 
         self._program = [r for r in self._program]
         self._program += list(toAdd)
@@ -618,7 +629,37 @@ class Program(object):
         self._program = [r for r in self._program if r not in toRemove]
         self._program += list(toAdd)
         
+    def applyacyclic(self):
+        """Applies Tp-Unfolding to the program. 
         
+        Applies a variant to be precise by first doing treeprocessing
+        and then Tp-Unfolding as this can be a bit better.
+
+        Returns:
+            None        
+        """
+        self._computeComponents()
+        self.treeprocess()
+        self._computeComponents()
+        ts = nx.topological_sort(self._condensation)
+        for t in ts:
+            comp = self._condensation.nodes[t]["members"]
+            if len(comp) > 1:
+                backdoor = self._compute_backdoor(t)
+                # if the backdoor needs more than half the atoms it is better if we use all the atoms as the backdoor
+                # this is because treeprocessing has another factor*2 and backdoor*2 > comp
+                backdoor = comp if len(backdoor) > len(comp)/2 else backdoor
+                self._acyclic_process(comp, backdoor)
+        self._computeComponents()
+        self.treeprocess()
+        self._computeComponents()
+        ts = nx.topological_sort(self._condensation)
+        # for t in ts:
+        #     comp = self._condensation.nodes[t]["members"]
+        #     if len(comp) > 1:
+        #         logger.error("Cycle breaking failed: the dependency graph still has a non-trivial SCC")
+        #         exit(-1)
+
     def tpUnfold(self):
         """Applies Tp-Unfolding to the program. 
         
