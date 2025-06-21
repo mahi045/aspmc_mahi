@@ -1017,9 +1017,8 @@ class CNF(object):
     def solve_mc(self):
         _, cnf_tmp = tempfile.mkstemp()
         my_signals.tempfiles.add(cnf_tmp)
-        print(f"CNF file: {cnf_tmp}")
+        logger.debug(f"CNF file: {cnf_tmp}")
         self.to_file(cnf_tmp, extras=False)
-        return [-1]
         logger.info("   Stats Model Counter")
         logger.info("------------------------------------------------------------")
         start = time.time()
@@ -1027,7 +1026,7 @@ class CNF(object):
         decot = max(decot, 0.1)
         # compute the available memory to set the cache size
         available_memory = max(psutil.virtual_memory().available//1024**2 - 125, 1000)
-        p = subprocess.Popen(["./sharpSAT", "-decot", str(decot), "-decow", "100", "-tmpdir", "/tmp/", "-cs", str(available_memory//2), cnf_tmp], cwd=os.path.join(src_path, "sharpsat-td/bin/"), stdout=subprocess.PIPE)
+        p = subprocess.Popen(["timeout", "3600s", "./ganak_new", "-v", str(0), cnf_tmp], cwd=os.path.join(src_path, "../../"), stdout=subprocess.PIPE)
         result = None
         logger.debug("Solver output:")
         for line in iter(p.stdout.readline, b''):

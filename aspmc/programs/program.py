@@ -444,10 +444,10 @@ class Program(object):
             for vp in edges[v]:
                 graph += f"{v} {vp}\n"
         if not approximate:
-            q = subprocess.Popen([os.path.join(src_path, "fvs/src/build/FeedbackVertexSet")], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            q = subprocess.Popen([os.path.join(src_path, "../../FeedbackVertexSet")], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             output, err = q.communicate(input=graph.encode(), timeout = float(config.config["backdoort"]))
         else:
-            q = subprocess.Popen([os.path.join(src_path, "fvs/src/build/FeedbackVertexSet"), "Appx"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            q = subprocess.Popen([os.path.join(src_path, "../../FeedbackVertexSet"), "Appx"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             output, err = q.communicate(input=graph.encode())
         res = [ int(v) for v in output.decode().split()[1:] ]
         return res
@@ -677,6 +677,7 @@ class Program(object):
             comp = self._condensation.nodes[t]["members"]
             if len(comp) > 1:
                 backdoor = self._compute_backdoor(t)
+                logger.info(f"backdoor size: {len(backdoor)}")
                 # if the backdoor needs more than half the atoms it is better if we use all the atoms as the backdoor
                 # this is because treeprocessing has another factor*2 and backdoor*2 > comp
                 backdoor = comp if len(backdoor) > len(comp)/2 else backdoor

@@ -320,7 +320,7 @@ def from_graph(graph, solver = "flow-cutter", timeout = "1"):
         map_node[idx] = node
         idx += 1
     if solver == "flow-cutter":
-        p = subprocess.Popen([os.path.join(src_path, "flow-cutter/flow_cutter_pace17")], stdin=subprocess.PIPE, stdout=subprocess.PIPE, close_fds = True)
+        p = subprocess.Popen([os.path.join(src_path, "../../flow_cutter_pace17")], stdin=subprocess.PIPE, stdout=subprocess.PIPE, close_fds = True)
     else:
         logger.error(f"Unknown td-solver {solver}")    
     # with open("debug.gr", "wb") as debug_gr:
