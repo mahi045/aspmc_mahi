@@ -1017,8 +1017,9 @@ class CNF(object):
     def solve_mc(self):
         _, cnf_tmp = tempfile.mkstemp()
         my_signals.tempfiles.add(cnf_tmp)
-        logger.debug(f"    CNF file: {cnf_tmp}")
+        print(f"CNF file: {cnf_tmp}")
         self.to_file(cnf_tmp, extras=False)
+        return [-1]
         logger.info("   Stats Model Counter")
         logger.info("------------------------------------------------------------")
         start = time.time()
