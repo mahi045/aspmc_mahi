@@ -723,6 +723,9 @@ class Program(object):
                     # body atom of r2 is v
                     new_head = r2.head
                     new_body = r1.body + [_ for _ in r2.body if _ != v]
+                    if len(new_head) == 1 and new_head[0] in new_body:
+                        continue
+                    
                     new_rule = Rule(new_head, new_body)
 
                     # print(r1)
