@@ -424,6 +424,29 @@ class Program(object):
         c = backdoor.ClingoControl(program_str)
         res = c.get_backdoor(None, timeout = timeout)[2][0]
         return res
+    
+    def _check_sparsity_of_graph(self, idx, timeout = 30.0, approximate = False):
+        comp = self._condensation.nodes[idx]["members"]
+        in_edges = {}
+        out_edges = {}
+        res = []
+        # initialization
+        for v in comp:
+            out_edges[v] = set()
+            in_edges[v] = set()
+
+        for v in comp:
+            ancs = set([vp[0] for vp in self.dep.in_edges(nbunch=v) if vp[0] in comp])
+            for vp in ancs:
+                out_edges[v].add(vp)
+                in_edges[vp].add(v)
+        
+        for v in comp:
+            if len(in_edges[v]) == 1 and len(out_edges[v]) == 1:
+                # only sparse nodes
+                res.append(v)
+
+        return res
 
     def _compute_backdoor_fvs(self, idx, timeout = 30.0, approximate = False):
         comp = self._condensation.nodes[idx]["members"]
@@ -660,6 +683,58 @@ class Program(object):
         #         logger.error("Cycle breaking failed: the dependency graph still has a non-trivial SCC")
         #         exit(-1)
 
+    def elementary_unfold(self, comp, sparse):
+        # print(f"comp: {comp}")
+        # for v in sparse:
+        #     con = set()
+        #     for r in self._program:
+        #         if v in r.body and len(r.head) > 0 and r.head[0] in comp:
+        #         # if v in r.body:
+        #             con.add(r)
+            
+        #     print(v, ins[v], con)
+        assert(len(sparse) <= len(comp))
+        for i in range(min(len(sparse), len(comp) - 3)):
+            # initialization of ins
+            ins = {}
+            toRemove = set()
+            toAdd = set()
+
+            for a in comp:
+                ins[a] = set()
+
+            for r in self._program:
+                for a in r.head:
+                    if a in comp:
+                        ins[a].add(r)
+            # initialization done
+
+            v = list(sparse)[i]
+
+            con = set()
+            # print(f"=> Eliminate atom {v}")
+            for r in self._program:
+                if v in r.body and len(r.head) > 0 and r.head[0] in comp:
+                    con.add(r)
+
+            for r1 in ins[v]:
+                # head atom of r1 is v
+                for r2 in con:
+                    # body atom of r2 is v
+                    new_head = r2.head
+                    new_body = r1.body + [_ for _ in r2.body if _ != v]
+                    new_rule = Rule(new_head, new_body)
+
+                    # print(r1)
+                    # print(r2)
+                    # print(new_rule)
+                    toRemove.add(r2)
+                    toAdd.add(new_rule)
+
+            self._program = [r for r in self._program if r not in toRemove]
+            self._program += list(toAdd)
+
+
     def tpUnfold(self):
         """Applies Tp-Unfolding to the program. 
         
@@ -669,6 +744,17 @@ class Program(object):
         Returns:
             None        
         """
+        self._computeComponents()
+        self.treeprocess()
+        self._computeComponents()
+        ts = nx.topological_sort(self._condensation)
+        for t in ts:
+            comp = self._condensation.nodes[t]["members"]
+            if len(comp) > 1:
+                sparse = self._check_sparsity_of_graph(t)
+                self.elementary_unfold(comp, sparse)
+                logger.info(f"sparse size: {len(sparse)}, {len(comp)}")
+
         self._computeComponents()
         self.treeprocess()
         self._computeComponents()
