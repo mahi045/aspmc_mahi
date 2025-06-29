@@ -189,6 +189,7 @@ def main():
             elif sys.argv[1] == "-sparse":
                 # delete sparse nodes before tp-Unfolding
                 delete_sparse_nodes = True
+                logger = logging.getLogger("aspmc-sparse")
                 del sys.argv[1]
             elif sys.argv[1] == "-p" or sys.argv[1] == "--preproc":
                 preprocessing = True
