@@ -145,6 +145,7 @@ python main.py [-m .] [-st .] [-c] [-s .] [-n] [-t] [-ds .] [-dt .] [-k .] [-g .
 def main():
     mode = "asp"
     cycle_breaking = "tp"
+    delete_sparse_nodes = False
     program_files = []
     program_str = ""
     count = False
@@ -184,6 +185,10 @@ def main():
                 del sys.argv[1:3]
             elif sys.argv[1] == "-c" or sys.argv[1] == "--count":
                 count = True
+                del sys.argv[1]
+            elif sys.argv[1] == "-sparse":
+                # delete sparse nodes before tp-Unfolding
+                delete_sparse_nodes = True
                 del sys.argv[1]
             elif sys.argv[1] == "-p" or sys.argv[1] == "--preproc":
                 preprocessing = True
@@ -283,7 +288,7 @@ def main():
                 program.write_prog(file_out)
                 exit(0)
         if cycle_breaking == "tp":
-            program.tpUnfold()
+            program.tpUnfold(delete_sparse_nodes)
         if cycle_breaking == "acyclic":
             program.applyacyclic()
         elif cycle_breaking == "binary":
