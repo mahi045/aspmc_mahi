@@ -189,7 +189,7 @@ def main():
             elif sys.argv[1] == "-sparse":
                 # delete sparse nodes before tp-Unfolding
                 delete_sparse_nodes = True
-                logger = logging.getLogger("aspmc-sparse")
+                # logger = logging.getLogger("aspmc-sparse")
                 del sys.argv[1]
             elif sys.argv[1] == "-p" or sys.argv[1] == "--preproc":
                 preprocessing = True
@@ -352,7 +352,10 @@ def main():
         for i,query in enumerate(queries):
             logger.result(f"{query}: {' '*max(1,(20 - len(query)))}{results[i]}")
     else:
-        logger.result(f"The overall weight of the program is {results[0]}")
+        if delete_sparse_nodes:
+            logger.result(f"-sparse The overall weight of the program is {results[0]}")
+        else:
+            logger.result(f"The overall weight of the program is {results[0]}")
 
 if __name__ == "__main__":
     main()
