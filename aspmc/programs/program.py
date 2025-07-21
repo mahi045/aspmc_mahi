@@ -738,6 +738,25 @@ class Program(object):
             self._program += list(toAdd)
 
 
+    def deleteSparserNodes(self, file_name):
+        # remove sparse nodes before tp-Unfolding
+        self._computeComponents()
+        self.treeprocess()
+        self._computeComponents()
+        ts = nx.topological_sort(self._condensation)
+        for t in ts:
+            comp = self._condensation.nodes[t]["members"]
+            if len(comp) > 1:
+                sparse = self._check_sparsity_of_graph(t)
+                self.elementary_unfold(comp, sparse)
+                logger.info(f"vee: number of sparse nodes (of all nodes): {len(sparse)} ({len(comp)})")
+
+        # print(Program._prog_string(self, self._program))
+        pp_file = open("pp_{0}".format(file_name), 'w')
+        pp_file.write(Program._prog_string(self, self._program))
+        logger.info(f"vee: preprocessed file: pp_{file_name}")
+        pp_file.close()
+
     def tpUnfold(self, sparse = False):
         """Applies Tp-Unfolding to the program. 
         
@@ -747,18 +766,18 @@ class Program(object):
         Returns:
             None        
         """
-        if sparse:
-            # remove sparse nodes before tp-Unfolding
-            self._computeComponents()
-            self.treeprocess()
-            self._computeComponents()
-            ts = nx.topological_sort(self._condensation)
-            for t in ts:
-                comp = self._condensation.nodes[t]["members"]
-                if len(comp) > 1:
-                    sparse = self._check_sparsity_of_graph(t)
-                    self.elementary_unfold(comp, sparse)
-                    logger.info(f"number of sparse nodes (all nodes): {len(sparse)}, {len(comp)}")
+        # if sparse:
+        #     # remove sparse nodes before tp-Unfolding
+        #     self._computeComponents()
+        #     self.treeprocess()
+        #     self._computeComponents()
+        #     ts = nx.topological_sort(self._condensation)
+        #     for t in ts:
+        #         comp = self._condensation.nodes[t]["members"]
+        #         if len(comp) > 1:
+        #             sparse = self._check_sparsity_of_graph(t)
+        #             self.elementary_unfold(comp, sparse)
+        #             logger.info(f"number of sparse nodes (all nodes): {len(sparse)}, {len(comp)}")
 
         self._computeComponents()
         self.treeprocess()

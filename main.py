@@ -288,8 +288,11 @@ def main():
             with open(f'{write_name}.lp', mode='wb') as file_out:
                 program.write_prog(file_out)
                 exit(0)
+        if delete_sparse_nodes:
+            program.deleteSparserNodes(program_files[0])
+            exit(0)
         if cycle_breaking == "tp":
-            program.tpUnfold(delete_sparse_nodes)
+            program.tpUnfold()
         if cycle_breaking == "acyclic":
             program.applyacyclic()
         elif cycle_breaking == "binary":
