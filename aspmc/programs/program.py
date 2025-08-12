@@ -438,11 +438,12 @@ class Program(object):
         for v in comp:
             ancs = set([vp[0] for vp in self.dep.in_edges(nbunch=v) if vp[0] in comp])
             for vp in ancs:
-                out_edges[v].add(vp)
-                in_edges[vp].add(v)
+                out_edges[vp].add(v)
+                in_edges[v].add(vp)
         
         for v in comp:
-            if len(in_edges[v]) * len(out_edges[v]) <= threshold:
+            # if len(in_edges[v]) * len(out_edges[v]) <= threshold:
+            if len(in_edges[v]) <= threshold:
                 # only sparse nodes
                 res.append(v)
 
