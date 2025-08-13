@@ -694,49 +694,109 @@ class Program(object):
         #             con.add(r)
             
         #     print(v, ins[v], con)
-        assert(len(sparse) <= len(comp))
-        for i in range(min(len(sparse), len(comp) - 2)):
-            # initialization of ins
-            ins = {}
-            toRemove = set()
-            toAdd = set()
+        # assert(len(sparse) <= len(comp))
+        cyclic_part_size = 0
+        additional_cyclic_part_size = 0
+        already_unfolded = set()
+        ins = dict()
+        for a in comp:
+            ins[a] = set()
 
-            for a in comp:
-                ins[a] = set()
+        for r in self._program:
+            if set(r.head).isdisjoint(comp):
+                cyclic_part_size += 1
 
-            for r in self._program:
-                for a in r.head:
-                    if a in comp:
-                        ins[a].add(r)
-            # initialization done
+            for a in r.head:
+                if a in comp:
+                    ins[a].add(r)
 
-            v = list(sparse)[i]
+        while True:
+            # choose the optimal variable for unfolding
+            cardinality = None
+            unfold_atom = None
+            for v in ins.keys():
+                if v not in already_unfolded and (unfold_atom == None or cardinality > len(ins[v])):
+                    # choosing the atom that yields least number of unfoleded rules
+                    cardinality = len(ins[v])
+                    unfold_atom = v
 
+            logger.info(f'unfolding atom: {unfold_atom}, ({cardinality})')
+            # mark is as unfolded
+            already_unfolded.add(unfold_atom)
             con = set()
-            # print(f"=> Eliminate atom {v}")
+            toAdd = set()
+            toRemove = set()
             for r in self._program:
-                if v in r.body and len(r.head) > 0 and r.head[0] in comp:
+                if unfold_atom in r.body and len(r.head) > 0 and r.head[0] in comp:
                     con.add(r)
 
-            for r1 in ins[v]:
+            for r1 in ins[unfold_atom]:
                 # head atom of r1 is v
                 for r2 in con:
                     # body atom of r2 is v
                     new_head = r2.head
-                    new_body = r1.body + [_ for _ in r2.body if _ != v]
+                    new_body = r1.body + [_ for _ in r2.body if _ != unfold_atom]
                     if len(new_head) == 1 and new_head[0] in new_body:
                         continue
                     
                     new_rule = Rule(new_head, new_body)
+                    # update ins
+                    ins[new_head[0]].add(new_rule)
 
-                    # print(r1)
-                    # print(r2)
-                    # print(new_rule)
                     toRemove.add(r2)
                     toAdd.add(new_rule)
 
+            additional_cyclic_part_size += (len(toAdd) - len(toRemove))
+
             self._program = [r for r in self._program if r not in toRemove]
             self._program += list(toAdd)
+
+            if cyclic_part_size / 2 <= additional_cyclic_part_size or len(already_unfolded) >= len(comp) - 2:
+                break
+
+        return already_unfolded
+        # for i in range(min(len(sparse), len(comp) - 2)):
+        #     # initialization of ins
+        #     ins = {}
+        #     toRemove = set()
+        #     toAdd = set()
+
+        #     for a in comp:
+        #         ins[a] = set()
+
+        #     for r in self._program:
+        #         for a in r.head:
+        #             if a in comp:
+        #                 ins[a].add(r)
+        #     # initialization done
+
+        #     v = list(sparse)[i]
+
+        #     con = set()
+        #     # print(f"=> Eliminate atom {v}")
+        #     for r in self._program:
+        #         if v in r.body and len(r.head) > 0 and r.head[0] in comp:
+        #             con.add(r)
+
+        #     for r1 in ins[v]:
+        #         # head atom of r1 is v
+        #         for r2 in con:
+        #             # body atom of r2 is v
+        #             new_head = r2.head
+        #             new_body = r1.body + [_ for _ in r2.body if _ != v]
+        #             if len(new_head) == 1 and new_head[0] in new_body:
+        #                 continue
+                    
+        #             new_rule = Rule(new_head, new_body)
+
+        #             # print(r1)
+        #             # print(r2)
+        #             # print(new_rule)
+        #             toRemove.add(r2)
+        #             toAdd.add(new_rule)
+
+        #     self._program = [r for r in self._program if r not in toRemove]
+        #     self._program += list(toAdd)
 
 
     def deleteSparserNodes(self, file_name):
@@ -749,8 +809,8 @@ class Program(object):
             comp = self._condensation.nodes[t]["members"]
             if len(comp) > 1:
                 sparse = self._check_sparsity_of_graph(t)
-                self.elementary_unfold(comp, sparse)
-                logger.info(f"vee: number of sparse nodes (of all nodes): {len(sparse)} ({len(comp)})")
+                unfoled_atoms = self.elementary_unfold(comp, sparse)
+                logger.info(f"vee: number of sparse nodes (of all nodes): {len(unfoled_atoms)} ({len(comp)})")
 
         # print(Program._prog_string(self, self._program))
         pp_file = open("pp_{0}".format(file_name), 'w')
