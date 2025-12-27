@@ -328,6 +328,7 @@ class CNF(object):
             None
         """
         with open(path, mode = 'w') as file_out:
+            logger.info(f"varables: {self.nr_vars} clauses: {len(self.clauses)}")
             file_out.write(f"p cnf {self.nr_vars} {len(self.clauses)}\n")
             for c in self.clauses:
                 file_out.write(f"{' '.join([str(l) for l in c])} 0\n")

@@ -684,7 +684,7 @@ class Program(object):
         #         logger.error("Cycle breaking failed: the dependency graph still has a non-trivial SCC")
         #         exit(-1)
 
-    def elementary_unfold(self, comp, sparse):
+    def elementary_unfold(self, comp, sparse_limit):
         # print(f"comp: {comp}")
         # for v in sparse:
         #     con = set()
@@ -751,7 +751,7 @@ class Program(object):
             self._program = [r for r in self._program if r not in toRemove]
             self._program += list(toAdd)
 
-            if cyclic_part_size / 2 <= additional_cyclic_part_size or len(already_unfolded) >= len(comp) - 2:
+            if sparse_limit * cyclic_part_size / 100 <= additional_cyclic_part_size or len(already_unfolded) >= len(comp) - 2:
                 break
 
         return already_unfolded
@@ -799,7 +799,7 @@ class Program(object):
         #     self._program += list(toAdd)
 
 
-    def deleteSparserNodes(self, file_name):
+    def deleteSparserNodes(self, file_name, sparse_limit):
         # remove sparse nodes before tp-Unfolding
         self._computeComponents()
         self.treeprocess()
@@ -808,8 +808,8 @@ class Program(object):
         for t in ts:
             comp = self._condensation.nodes[t]["members"]
             if len(comp) > 1:
-                sparse = self._check_sparsity_of_graph(t)
-                unfoled_atoms = self.elementary_unfold(comp, sparse)
+                # sparse = self._check_sparsity_of_graph(t)
+                unfoled_atoms = self.elementary_unfold(comp, sparse_limit)
                 logger.info(f"vee: number of sparse nodes (of all nodes): {len(unfoled_atoms)} ({len(comp)})")
 
         # print(Program._prog_string(self, self._program))

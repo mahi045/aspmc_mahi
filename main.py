@@ -146,6 +146,7 @@ def main():
     mode = "asp"
     cycle_breaking = "tp"
     delete_sparse_nodes = False
+    sparse_limit = None
     program_files = []
     program_str = ""
     count = False
@@ -189,8 +190,10 @@ def main():
             elif sys.argv[1] == "-sparse":
                 # delete sparse nodes before tp-Unfolding
                 delete_sparse_nodes = True
+                sparse_limit = int(sys.argv[2]) # the threshold is a int (e.g., 10, 20, ...)
+                logger.info(f"Sparse limit: {sparse_limit}%")
                 # logger = logging.getLogger("aspmc-sparse")
-                del sys.argv[1]
+                del sys.argv[1:3]    
             elif sys.argv[1] == "-p" or sys.argv[1] == "--preproc":
                 preprocessing = True
                 del sys.argv[1]
@@ -289,7 +292,7 @@ def main():
                 program.write_prog(file_out)
                 exit(0)
         if delete_sparse_nodes:
-            program.deleteSparserNodes(program_files[0])
+            program.deleteSparserNodes(program_files[0], sparse_limit)
             exit(0)
         if cycle_breaking == "tp":
             program.tpUnfold()
