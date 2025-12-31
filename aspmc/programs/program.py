@@ -699,16 +699,23 @@ class Program(object):
         additional_cyclic_part_size = 0
         already_unfolded = set()
         ins = dict()
+        parts = dict() # an atom takes part in the rule
         for a in comp:
             ins[a] = set()
+            parts[a] = set()
 
         for r in self._program:
-            if set(r.head).isdisjoint(comp):
+            if not set(r.head).isdisjoint(comp) and not set(r.body).isdisjoint(comp):
+                # print(r)
                 cyclic_part_size += 1
 
             for a in r.head:
                 if a in comp:
                     ins[a].add(r)
+
+                    for b in r.body:
+                        if b > 0 and b in comp:
+                            parts[b].add(r)
 
         while True:
             # choose the optimal variable for unfolding
@@ -738,16 +745,24 @@ class Program(object):
                     # logger.info(f"r2: {r2}")
                     new_head = r2.head
                     new_body = r1.body + [_ for _ in r2.body if _ != unfold_atom]
+                    toRemove.add(r2)
+                    new_rule = Rule(new_head, new_body)
                     if len(new_head) == 1 and new_head[0] in new_body:
+                        # logger.info(f"discard: new_rule: {new_rule}")
                         continue
                     
-                    new_rule = Rule(new_head, new_body)
+                    # new_rule = Rule(new_head, new_body)
                     # logger.info(f"new_rule: {new_rule}")
                     # update ins
                     ins[new_head[0]].add(new_rule) # we are consider normal rule: |Head(r)| <= 1
-
-                    toRemove.add(r2)
                     toAdd.add(new_rule)
+
+            for r2 in con:
+                # unfold_atom is not a part of cycle
+                new_body = set([_ for _ in r2.body if _ > 0 and _ != unfold_atom])
+                if new_body.isdisjoint(comp):
+                    # print("discarded: ", r2)
+                    ins[r2.head[0]].discard(r2) 
 
             additional_cyclic_part_size += (len(toAdd) - len(toRemove))
 
@@ -813,6 +828,7 @@ class Program(object):
             comp = self._condensation.nodes[t]["members"]
             if len(comp) > 1:
                 # sparse = self._check_sparsity_of_graph(t)
+                # logger.info(f"initial: {comp}")
                 unfoled_atoms = self.elementary_unfold(comp, sparse_limit)
                 all_unfoled_atoms.update(unfoled_atoms)
                 logger.info(f"vee: number of sparse nodes (of all nodes): {len(unfoled_atoms)} ({len(comp)})")
