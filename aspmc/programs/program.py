@@ -732,16 +732,19 @@ class Program(object):
 
             for r1 in ins[unfold_atom]:
                 # head atom of r1 is v
+                # logger.info(f"r1: {r1}")
                 for r2 in con:
                     # body atom of r2 is v
+                    # logger.info(f"r2: {r2}")
                     new_head = r2.head
                     new_body = r1.body + [_ for _ in r2.body if _ != unfold_atom]
                     if len(new_head) == 1 and new_head[0] in new_body:
                         continue
                     
                     new_rule = Rule(new_head, new_body)
+                    # logger.info(f"new_rule: {new_rule}")
                     # update ins
-                    ins[new_head[0]].add(new_rule)
+                    ins[new_head[0]].add(new_rule) # we are consider normal rule: |Head(r)| <= 1
 
                     toRemove.add(r2)
                     toAdd.add(new_rule)
@@ -750,7 +753,7 @@ class Program(object):
 
             self._program = [r for r in self._program if r not in toRemove]
             self._program += list(toAdd)
-
+            logger.info(f'cyclic part: {cyclic_part_size} and additional_cyclic_part_size: {additional_cyclic_part_size}')
             if sparse_limit * cyclic_part_size / 100 <= additional_cyclic_part_size or len(already_unfolded) >= len(comp) - 2:
                 break
 
@@ -805,12 +808,24 @@ class Program(object):
         self.treeprocess()
         self._computeComponents()
         ts = nx.topological_sort(self._condensation)
+        all_unfoled_atoms = set()
         for t in ts:
             comp = self._condensation.nodes[t]["members"]
             if len(comp) > 1:
                 # sparse = self._check_sparsity_of_graph(t)
                 unfoled_atoms = self.elementary_unfold(comp, sparse_limit)
+                all_unfoled_atoms.update(unfoled_atoms)
                 logger.info(f"vee: number of sparse nodes (of all nodes): {len(unfoled_atoms)} ({len(comp)})")
+
+        self._computeComponents()
+        ts = nx.topological_sort(self._condensation)
+        for t in ts:
+            comp = self._condensation.nodes[t]["members"]
+            if len(comp) > 1:
+                # logger.info(f"{all_unfoled_atoms} and {comp}")
+                # logger.info(f"Checking unfolded atoms {len(all_unfoled_atoms)} and {len(comp)}")
+                assert(all_unfoled_atoms.isdisjoint(comp))
+
 
         # print(Program._prog_string(self, self._program))
         pp_file = open("pp_{0}".format(file_name), 'w')

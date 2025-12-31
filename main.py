@@ -291,7 +291,7 @@ def main():
             with open(f'{write_name}.lp', mode='wb') as file_out:
                 program.write_prog(file_out)
                 exit(0)
-        if delete_sparse_nodes:
+        if delete_sparse_nodes and not count:
             program.deleteSparserNodes(program_files[0], sparse_limit)
             exit(0)
         if cycle_breaking == "tp":
