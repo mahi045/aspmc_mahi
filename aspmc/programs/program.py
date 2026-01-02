@@ -745,6 +745,7 @@ class Program(object):
                     # logger.info(f"r2: {r2}")
                     new_head = r2.head
                     new_body = r1.body + [_ for _ in r2.body if _ != unfold_atom]
+                    new_body = list(set(new_body))
                     toRemove.add(r2)
                     new_rule = Rule(new_head, new_body)
                     if len(new_head) == 1 and new_head[0] in new_body:
