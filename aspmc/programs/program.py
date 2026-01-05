@@ -766,6 +766,11 @@ class Program(object):
                     ins[r2.head[0]].discard(r2) 
 
             additional_cyclic_part_size += (len(toAdd) - len(toRemove))
+            if additional_cyclic_part_size / len(already_unfolded) > 2:
+                # > 2 is a hard-coded threshold
+                already_unfolded.remove(unfold_atom)
+                # it is early stop
+                break
 
             self._program = [r for r in self._program if r not in toRemove]
             self._program += list(toAdd)
