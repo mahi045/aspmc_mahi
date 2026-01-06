@@ -841,14 +841,16 @@ class Program(object):
 
         self._computeComponents()
         ts = nx.topological_sort(self._condensation)
+        total_cyclic_atom = 0
         for t in ts:
             comp = self._condensation.nodes[t]["members"]
             if len(comp) > 1:
+                total_cyclic_atom += len(comp)
                 # logger.info(f"{all_unfoled_atoms} and {comp}")
                 # logger.info(f"Checking unfolded atoms {len(all_unfoled_atoms)} and {len(comp)}")
                 assert(all_unfoled_atoms.isdisjoint(comp))
 
-
+        logger.info(f"Number of cyclic atom: {total_cyclic_atom}")
         # print(Program._prog_string(self, self._program))
         pp_file = open("pp_{0}".format(file_name), 'w')
         pp_file.write(Program._prog_string(self, self._program))
@@ -881,15 +883,19 @@ class Program(object):
         self.treeprocess()
         self._computeComponents()
         ts = nx.topological_sort(self._condensation)
+        total_cyclic_atom = 0
         for t in ts:
             comp = self._condensation.nodes[t]["members"]
             if len(comp) > 1:
+                total_cyclic_atom += len(comp)
                 backdoor = self._compute_backdoor(t)
                 logger.info(f"backdoor size: {len(backdoor)}")
                 # if the backdoor needs more than half the atoms it is better if we use all the atoms as the backdoor
                 # this is because treeprocessing has another factor*2 and backdoor*2 > comp
                 backdoor = comp if len(backdoor) > len(comp)/2 else backdoor
                 self._backdoor_process(comp, backdoor)
+        
+        logger.info(f"Number of cyclic atom: {total_cyclic_atom}")
         self._computeComponents()
         self.treeprocess()
         self._computeComponents()
