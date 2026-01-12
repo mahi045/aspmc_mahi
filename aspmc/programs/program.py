@@ -722,9 +722,9 @@ class Program(object):
             cardinality = None
             unfold_atom = None
             for v in ins.keys():
-                if v not in already_unfolded and (unfold_atom == None or cardinality > len(ins[v])):
+                if v not in already_unfolded and (unfold_atom == None or cardinality > len(ins[v]) * len(parts[v])):
                     # choosing the atom that yields least number of unfoleded rules
-                    cardinality = len(ins[v])
+                    cardinality = len(ins[v]) * len(parts[v])
                     unfold_atom = v
 
             logger.info(f'unfolding atom: {unfold_atom}, ({cardinality})')
@@ -737,6 +737,8 @@ class Program(object):
                 if unfold_atom in r.body and len(r.head) > 0 and r.head[0] in comp:
                     con.add(r)
 
+            assert(con == parts[unfold_atom])
+
             for r1 in ins[unfold_atom]:
                 # head atom of r1 is v
                 # logger.info(f"r1: {r1}")
@@ -747,6 +749,11 @@ class Program(object):
                     new_body = r1.body + [_ for _ in r2.body if _ != unfold_atom]
                     new_body = list(set(new_body))
                     toRemove.add(r2)
+                    # updating parts
+                    for b in r2.body:
+                        if b > 0 and b in comp:
+                            parts[b].discard(r2)
+
                     new_rule = Rule(new_head, new_body)
                     if len(new_head) == 1 and new_head[0] in new_body:
                         # logger.info(f"discard: new_rule: {new_rule}")
@@ -756,6 +763,11 @@ class Program(object):
                     # logger.info(f"new_rule: {new_rule}")
                     # update ins
                     ins[new_head[0]].add(new_rule) # we are consider normal rule: |Head(r)| <= 1
+                    # updating parts
+                    for b in new_body:
+                        if b > 0 and b in comp:
+                            parts[b].add(new_rule)
+
                     toAdd.add(new_rule)
 
             for r2 in con:
@@ -766,7 +778,7 @@ class Program(object):
                     ins[r2.head[0]].discard(r2) 
 
             additional_cyclic_part_size += (len(toAdd) - len(toRemove))
-            if additional_cyclic_part_size / len(already_unfolded) > 2:
+            if additional_cyclic_part_size / len(already_unfolded) > 3:
                 # > 2 is a hard-coded threshold
                 already_unfolded.remove(unfold_atom)
                 # it is early stop
