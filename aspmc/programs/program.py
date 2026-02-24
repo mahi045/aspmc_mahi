@@ -896,17 +896,20 @@ class Program(object):
         self._computeComponents()
         ts = nx.topological_sort(self._condensation)
         total_cyclic_atom = 0
+        backdoor_size = 0
         for t in ts:
             comp = self._condensation.nodes[t]["members"]
             if len(comp) > 1:
                 total_cyclic_atom += len(comp)
                 backdoor = self._compute_backdoor(t)
-                logger.info(f"backdoor size: {len(backdoor)}")
+                # logger.info(f"backdoor size: {len(backdoor)}")
+                backdoor_size += len(backdoor)
                 # if the backdoor needs more than half the atoms it is better if we use all the atoms as the backdoor
                 # this is because treeprocessing has another factor*2 and backdoor*2 > comp
                 backdoor = comp if len(backdoor) > len(comp)/2 else backdoor
                 self._backdoor_process(comp, backdoor)
         
+        logger.info(f"backdoor size: {backdoor_size}")
         logger.info(f"Number of cyclic atom: {total_cyclic_atom}")
         self._computeComponents()
         self.treeprocess()
