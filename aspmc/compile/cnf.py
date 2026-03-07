@@ -328,7 +328,7 @@ class CNF(object):
             None
         """
         with open(path, mode = 'w') as file_out:
-            logger.info(f"varables: {self.nr_vars} clauses: {len(self.clauses)}")
+            logger.info(f"variables: {self.nr_vars} clauses: {len(self.clauses)}")
             file_out.write(f"p cnf {self.nr_vars} {len(self.clauses)}\n")
             for c in self.clauses:
                 file_out.write(f"{' '.join([str(l) for l in c])} 0\n")
@@ -1027,7 +1027,7 @@ class CNF(object):
         decot = max(decot, 0.1)
         # compute the available memory to set the cache size
         available_memory = max(psutil.virtual_memory().available//1024**2 - 125, 1000)
-        p = subprocess.Popen(["timeout", "3600s", "./ganak_new", "-v", str(0), "--maxcache", str(4096), cnf_tmp], cwd=os.path.join(src_path, "../../"), stdout=subprocess.PIPE)
+        p = subprocess.Popen(["timeout", "3600s", "./ganak_new", "--verb", str(0), "--prob", str(0), "--maxcache", str(4000), cnf_tmp], cwd=os.path.join(src_path, "../../"), stdout=subprocess.PIPE)
         result = None
         logger.debug("Solver output:")
         for line in iter(p.stdout.readline, b''):
