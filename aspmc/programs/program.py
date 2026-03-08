@@ -727,17 +727,17 @@ class Program(object):
                     cardinality = len(ins[v]) * len(parts[v])
                     unfold_atom = v
 
-            logger.info(f'unfolding atom: {unfold_atom}, ({cardinality})')
+            # logger.info(f'unfolding atom: {unfold_atom}, ({cardinality})')
             # mark is as unfolded
             already_unfolded.add(unfold_atom)
             con = set()
             toAdd = set()
             toRemove = set()
-            for r in self._program:
-                if unfold_atom in r.body and len(r.head) > 0 and r.head[0] in comp:
-                    con.add(r)
-
-            assert(con == parts[unfold_atom])
+            # for r in self._program:
+            #     if unfold_atom in r.body and len(r.head) > 0 and r.head[0] in comp:
+            #         con.add(r)
+            con = set(parts[unfold_atom])
+            # assert(con == parts[unfold_atom])
 
             for r1 in ins[unfold_atom]:
                 # head atom of r1 is v
@@ -779,17 +779,17 @@ class Program(object):
 
             additional_cyclic_part_size += (len(toAdd) - len(toRemove))
             if additional_cyclic_part_size / len(already_unfolded) > 3:
-                # > 2 is a hard-coded threshold
                 already_unfolded.remove(unfold_atom)
                 # it is early stop
                 break
 
             self._program = [r for r in self._program if r not in toRemove]
             self._program += list(toAdd)
-            logger.info(f'cyclic part: {cyclic_part_size} and additional_cyclic_part_size: {additional_cyclic_part_size}')
+            # logger.info(f'cyclic part: {cyclic_part_size} and additional_cyclic_part_size: {additional_cyclic_part_size}')
             if sparse_limit * cyclic_part_size / 100 <= additional_cyclic_part_size or len(already_unfolded) >= len(comp) - 2:
                 break
-
+        
+        logger.info(f'cyclic part: {cyclic_part_size} and additional_cyclic_part_size: {additional_cyclic_part_size}')    
         return already_unfolded
         # for i in range(min(len(sparse), len(comp) - 2)):
         #     # initialization of ins
